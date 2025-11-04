@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/irmadev7/tripmate-backend/internal/itinerary"
 	"github.com/irmadev7/tripmate-backend/internal/model"
 	"github.com/irmadev7/tripmate-backend/internal/pkg/config"
 	"github.com/irmadev7/tripmate-backend/internal/user"
@@ -25,7 +26,9 @@ func New() *Server {
 	db := config.ConnectDB()
 	db.AutoMigrate(&model.User{})
 
+	// register routes
 	user.RegisterRoutes(r, db)
+	itinerary.RegisterRoutes(r, db)
 
 	return &Server{r: r, db: db}
 }

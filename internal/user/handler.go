@@ -1,6 +1,7 @@
 package user
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -13,16 +14,17 @@ import (
 )
 
 type UserHandler struct {
-	repo repository.Sql
+	repo repository.UserRepository
 }
 
-func NewUserHandler(r repository.Sql) *UserHandler {
+func NewUserHandler(r repository.UserRepository) *UserHandler {
 	return &UserHandler{repo: r}
 }
 
 func (h *UserHandler) RegisterHandler(c *gin.Context) {
 	var req model.UserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Println("Error binding JSON:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

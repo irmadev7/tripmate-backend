@@ -44,7 +44,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 
 		// Optionally, set claims to context
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			c.Set("username", claims["username"])
+			c.Set("email", claims["email"])
 		}
 
 		c.Next()

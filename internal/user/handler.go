@@ -94,14 +94,26 @@ func (h *UserHandler) LoginHandler(c *gin.Context) {
 }
 
 func (h *UserHandler) ProfileHandler(c *gin.Context) {
-	username, exists := c.Get("username")
+	email, exists := c.Get("email")
 	if !exists {
-		c.JSON(500, gin.H{"error": "username not found in context"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "email not found in context"})
 		return
 	}
 
-	c.JSON(200, gin.H{
-		"message":  "Welcome to your profile!",
-		"username": username,
+	emailStr, ok := email.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid email type"})
+		return
+	}
+
+	profile, err := h.repo.GetUserByEmail(c, emailStr)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Welcome to your profile!",
+		"data":    model.UserResponse{Email: profile.Email, Name: profile.Name},
 	})
 }

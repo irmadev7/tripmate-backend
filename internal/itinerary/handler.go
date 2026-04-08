@@ -106,7 +106,7 @@ func (h *ItineraryHandler) AddPlaceToItinerary(c *gin.Context) {
 
 	var input model.AddPlaceRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -119,9 +119,9 @@ func (h *ItineraryHandler) AddPlaceToItinerary(c *gin.Context) {
 	}
 
 	if err := h.placeRepo.AddPlaceToItinerary(c, &place).Error; err != nil {
-		c.JSON(500, gin.H{"error": "failed to add place"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add place"})
 		return
 	}
 
-	c.JSON(201, place)
+	c.JSON(http.StatusCreated, place)
 }

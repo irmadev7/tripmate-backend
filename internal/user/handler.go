@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/irmadev7/tripmate-backend/internal/model"
+	"github.com/irmadev7/tripmate-backend/internal/pkg/utils"
 	"github.com/irmadev7/tripmate-backend/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,12 +30,6 @@ func (h *UserHandler) RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	existingUser, err := h.repo.GetUserByUsername(c, req.Username)
-	if err == nil || existingUser != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "username already exists"})
-		return
-	}
-
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
@@ -42,38 +37,46 @@ func (h *UserHandler) RegisterHandler(c *gin.Context) {
 	}
 
 	user := model.User{
-		Username: req.Username,
+		Email:    req.Email,
+		Name:     req.Name,
 		Password: string(hashed),
 	}
 	if err := h.repo.CreateUser(c, &user); err != nil {
+		// detect duplicate key
+		if repository.IsDuplicateKeyError(err) {
+			c.JSON(http.StatusConflict, gin.H{"error": "username already exists"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return
 	}
+
+	go utils.SendEmail(user.Email, user.Name)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "user registered"})
 }
 
 func (h *UserHandler) LoginHandler(c *gin.Context) {
-	var req model.UserRequest
+	var req model.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user, err := h.repo.GetUserByUsername(c, req.Username)
+	user, err := h.repo.GetUserByEmail(c, req.Email)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)) != nil {
+	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": user.Username,
-		"exp":      time.Now().Add(time.Hour * 72).Unix(),
+		"email": user.Email,
+		"exp":   time.Now().Add(time.Hour * 72).Unix(),
 	})
 
 	secret := os.Getenv("JWT_SECRET")

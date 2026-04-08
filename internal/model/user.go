@@ -2,11 +2,18 @@ package model
 
 type User struct {
 	BaseModel
-	Username string `gorm:"uniqueIndex;not null"`
+	Email    string `gorm:"uniqueIndex;not null"`
+	Name     string `gorm:"not null"`
 	Password string `gorm:"not null"`
 }
 
 type UserRequest struct {
-	Username string `json:"username" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }

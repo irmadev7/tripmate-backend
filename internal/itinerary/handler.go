@@ -30,13 +30,13 @@ func (h *ItineraryHandler) CreateItinerary(c *gin.Context) {
 		return
 	}
 
-	username, exists := c.Get("username")
+	email, exists := c.Get("email")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	loginUser, err := h.userRepo.GetUserByUsername(c, username.(string))
+	loginUser, err := h.userRepo.GetUserByEmail(c, email.(string))
 	if err != nil || loginUser == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "user lookup failed"})
 		return
@@ -58,13 +58,13 @@ func (h *ItineraryHandler) CreateItinerary(c *gin.Context) {
 }
 
 func (h *ItineraryHandler) GetMyItineraries(c *gin.Context) {
-	username, exists := c.Get("username")
+	email, exists := c.Get("email")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	loginUser, err := h.userRepo.GetUserByUsername(c, username.(string))
+	loginUser, err := h.userRepo.GetUserByEmail(c, email.(string))
 	if err != nil || loginUser == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "user lookup failed"})
 		return
@@ -80,7 +80,7 @@ func (h *ItineraryHandler) GetMyItineraries(c *gin.Context) {
 }
 
 func (h *ItineraryHandler) AddPlaceToItinerary(c *gin.Context) {
-	username, exists := c.Get("username")
+	email, exists := c.Get("email")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -94,7 +94,7 @@ func (h *ItineraryHandler) AddPlaceToItinerary(c *gin.Context) {
 		return
 	}
 
-	loginUser, err := h.userRepo.GetUserByUsername(c, username.(string))
+	loginUser, err := h.userRepo.GetUserByEmail(c, email.(string))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "user lookup failed"})
 		return

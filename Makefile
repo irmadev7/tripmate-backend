@@ -5,5 +5,5 @@ migration:
 	@goose -dir=docs/migrations create $(filename) sql
 
 migrate:
-	goose -dir=docs/migrations postgres "user=postgres password= postgres dbname=postgres sslmode=disable" up
+	goose -dir=docs/migrations postgres "host=localhost port=5432 user=postgres dbname=postgres password= sslmode=disable" up
 

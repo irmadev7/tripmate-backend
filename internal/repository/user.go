@@ -26,3 +26,8 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 	}
 	return &user, nil
 }
+
+func (r *userRepository) UpdateRefreshToken(ctx context.Context, email, token string) error {
+	query := `UPDATE users SET refresh_token=$1 WHERE email=$2`
+	return r.db.WithContext(ctx).Exec(query, token, email).Error
+}

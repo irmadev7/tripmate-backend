@@ -13,11 +13,12 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 	userHandler := UserHandler{repo: &userRepo}
 	r.POST("/register", userHandler.RegisterHandler)
 	r.POST("/login", userHandler.LoginHandler)
+	r.POST("/refresh", userHandler.RefreshTokenHandler)
 
 	protected := r.Group("/")
 	protected.Use(middleware.JWTAuthMiddleware())
 	{
 		protected.GET("/profile", userHandler.ProfileHandler)
+		protected.POST("/logout", userHandler.LogoutHandler)
 	}
-
 }

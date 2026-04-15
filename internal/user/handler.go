@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -74,23 +73,24 @@ func (h *UserHandler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email": user.Email,
-		"exp":   time.Now().Add(time.Hour * 72).Unix(),
-	})
-
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "defaultsecret"
-	}
-
-	tokenString, err := token.SignedString([]byte(secret))
+	accessToken, err := GenerateAccessToken(user.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate token"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	refreshToken, err := GenerateRefreshToken(user.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate token"})
+		return
+	}
+
+	if err = h.repo.UpdateRefreshToken(c, user.Email, refreshToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save refresh token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"access_token": accessToken, "refresh_token": refreshToken})
 }
 
 func (h *UserHandler) ProfileHandler(c *gin.Context) {
@@ -116,4 +116,94 @@ func (h *UserHandler) ProfileHandler(c *gin.Context) {
 		"message": "Welcome to your profile!",
 		"data":    model.UserResponse{Email: profile.Email, Name: profile.Name},
 	})
+}
+
+func (h *UserHandler) RefreshTokenHandler(c *gin.Context) {
+	var req model.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "JWT_SECRET is empty"})
+		return
+	}
+
+	token, err := jwt.Parse(req.RefreshToken, func(token *jwt.Token) (interface{}, error) {
+		// validate signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrTokenMalformed
+		}
+
+		return []byte(secret), nil
+	})
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid claims"})
+		return
+	}
+
+	// validate token type
+	tokenType, ok := claims["type"]
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token type"})
+		return
+	}
+	tokenTypeStr, ok := tokenType.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token type"})
+		return
+	}
+	if tokenTypeStr != "refresh" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token type"})
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token email"})
+		return
+	}
+
+	user, err := h.repo.GetUserByEmail(c, email)
+	if err != nil || user.RefreshToken != req.RefreshToken {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	newAccessToken, err := GenerateAccessToken(email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"access_token": newAccessToken})
+
+}
+
+func (h *UserHandler) LogoutHandler(c *gin.Context) {
+	email, ok := c.Get("email")
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid email"})
+		return
+	}
+	emailStr, ok := email.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid email"})
+		return
+	}
+	err := h.repo.UpdateRefreshToken(c, emailStr, "")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to logout"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
 }

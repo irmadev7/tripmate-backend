@@ -2,9 +2,10 @@ package model
 
 type User struct {
 	BaseModel
-	Email    string `gorm:"uniqueIndex;not null"`
-	Name     string `gorm:"not null"`
-	Password string `gorm:"not null"`
+	Email        string `gorm:"uniqueIndex;not null"`
+	Name         string `gorm:"not null"`
+	Password     string `gorm:"not null"`
+	RefreshToken string `gorm:"null"`
 }
 
 type UserRequest struct {
@@ -21,4 +22,8 @@ type UserResponse struct {
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
 }

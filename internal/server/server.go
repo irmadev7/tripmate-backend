@@ -1,13 +1,18 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"os"
 
+	"github.com/irmadev7/tripmate-backend/internal/auth"
 	"github.com/irmadev7/tripmate-backend/internal/itinerary"
 	"github.com/irmadev7/tripmate-backend/internal/model"
 	"github.com/irmadev7/tripmate-backend/internal/pkg/config"
+	"github.com/irmadev7/tripmate-backend/internal/repository"
 	"github.com/irmadev7/tripmate-backend/internal/user"
+	itineraryV1 "github.com/irmadev7/tripmate-backend/internal/v1/itinerary"
+	userV1 "github.com/irmadev7/tripmate-backend/internal/v1/user"
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
@@ -19,18 +24,37 @@ type Server struct {
 	db *gorm.DB
 }
 
-func New() *Server {
+func New() (*Server, error) {
 	_ = godotenv.Load()
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		return nil, fmt.Errorf("JWT_SECRET is required")
+	}
+
 	r := gin.Default()
 
 	db := config.ConnectDB()
 	db.AutoMigrate(&model.User{})
 
 	// register routes
-	user.RegisterRoutes(r, db)
-	itinerary.RegisterRoutes(r, db)
+	api := r.Group("/api")
+	v1 := api.Group("/v1")
 
-	return &Server{r: r, db: db}
+	// repo
+	placeRepo := repository.NewPlaceRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	itineraryRepo := repository.NewItineraryRepository(db)
+
+	// service
+	tokenService := auth.NewTokenService(secret)
+	userService := user.NewService(&userRepo, tokenService)
+	itineraryService := itinerary.NewService(&itineraryRepo, &userRepo, &placeRepo)
+
+	// routes
+	userV1.RegisterRoutes(v1, userService, tokenService)
+	itineraryV1.RegisterRoutes(v1, itineraryService, tokenService)
+
+	return &Server{r: r, db: db}, nil
 }
 
 func (s *Server) Run() error {

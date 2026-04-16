@@ -2,14 +2,14 @@ package middleware
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/irmadev7/tripmate-backend/internal/auth"
 )
 
-func JWTAuthMiddleware() gin.HandlerFunc {
+func JWTAuthMiddleware(tokenSvc *auth.TokenService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -25,29 +25,19 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 
 		tokenStr := parts[1]
 
-		secret := os.Getenv("JWT_SECRET")
-		if secret == "" {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "JWT_SECRET is empty"})
-			return
-		}
-
-		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-			// Validate signing method
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrTokenMalformed
-			}
-			return []byte(secret), nil
-		})
+		token, err := tokenSvc.Parse(tokenStr)
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return
 		}
 
 		// Optionally, set claims to context
-		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			c.Set("email", claims["email"])
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok || claims["type"] != "access" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			return
 		}
-
+		c.Set("email", claims["email"])
 		c.Next()
 	}
 }

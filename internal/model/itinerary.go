@@ -24,15 +24,18 @@ type Destination struct {
 }
 
 type CreateItineraryRequest struct {
-	Title       string    `json:"title"`
+	Title       string    `json:"title" binding:"required"`
 	Description string    `json:"description"`
-	StartDate   time.Time `json:"start_date"`
-	EndDate     time.Time `json:"end_date"`
+	StartDate   time.Time `json:"start_date" binding:"required"`
+	EndDate     time.Time `json:"end_date" binding:"required"`
+	Email       string    `json:"-"`
 }
 
 type AddPlaceRequest struct {
-	Name  string `json:"name"`
-	Note  string `json:"note"`
-	Day   int    `json:"day"`
-	Order int    `json:"order"`
+	Name        string `json:"name" binding:"required"`
+	Note        string `json:"note"`
+	Day         int    `json:"day" binding:"required"`
+	Order       int    `json:"order" binding:"required"`
+	ItineraryID int    `json:"-"`
+	Email       string `json:"-"`
 }

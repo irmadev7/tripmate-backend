@@ -14,7 +14,7 @@ type UserRepository interface {
 
 type ItineraryRepository interface {
 	CreateItinerary(ctx context.Context, itinerary *model.Itinerary) error
-	GetItineraryByUser(ctx context.Context, userId int) (*[]model.Itinerary, error)
+	GetItineraryByUser(ctx context.Context, pagination model.PaginationQuery, userId int) (*[]model.Itinerary, int64, error)
 	GetItineraryById(ctx context.Context, itineraryId int) (*model.Itinerary, error)
 }
 

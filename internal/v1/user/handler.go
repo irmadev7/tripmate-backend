@@ -34,7 +34,7 @@ func (h *Handler) RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "user registered", resp)
+	response.Success(c, http.StatusCreated, "user registered", resp, nil)
 }
 
 func (h *Handler) LoginHandler(c *gin.Context) {
@@ -53,7 +53,7 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "login successful", resp)
+	response.Success(c, http.StatusOK, "login successful", resp, nil)
 }
 
 func (h *Handler) ProfileHandler(c *gin.Context) {
@@ -69,7 +69,7 @@ func (h *Handler) ProfileHandler(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "welcome to your profile!", profile)
+	response.Success(c, http.StatusOK, "welcome to your profile!", profile, nil)
 }
 
 func (h *Handler) RefreshTokenHandler(c *gin.Context) {
@@ -85,7 +85,7 @@ func (h *Handler) RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "processed successfully", newAccessToken)
+	response.Success(c, http.StatusOK, "processed successfully", newAccessToken, nil)
 }
 
 func (h *Handler) LogoutHandler(c *gin.Context) {
@@ -99,5 +99,5 @@ func (h *Handler) LogoutHandler(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "logged out", nil)
+	response.Success(c, http.StatusOK, "logged out", nil, nil)
 }

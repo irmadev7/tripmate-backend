@@ -3,6 +3,7 @@ package itinerary
 import (
 	"context"
 	"errors"
+	"math"
 
 	"github.com/irmadev7/tripmate-backend/internal/model"
 	"github.com/irmadev7/tripmate-backend/internal/pkg/apperror"
@@ -44,18 +45,30 @@ func (s *Service) CreateItinerary(ctx context.Context, req model.CreateItinerary
 	return nil
 }
 
-func (s *Service) GetMyItineraries(ctx context.Context, email string) (*[]model.Itinerary, error) {
-	loginUser, err := s.userRepo.GetUserByEmail(ctx, email)
+func (s *Service) GetMyItineraries(ctx context.Context, req model.GetMyItineraryRequest) (*model.GetMyItineraryResponse, error) {
+	loginUser, err := s.userRepo.GetUserByEmail(ctx, req.Email)
 	if err != nil || loginUser == nil {
 		return nil, apperror.New(apperror.Unauthorized, "user doesn't have access", err)
 	}
 
-	itineraries, err := s.itineraryRepo.GetItineraryByUser(ctx, int(loginUser.ID))
+	pagination := model.PaginationQuery{
+		Page:   req.Page,
+		Limit:  req.Limit,
+		Search: req.Search,
+	}
+	itineraries, total, err := s.itineraryRepo.GetItineraryByUser(ctx, pagination, int(loginUser.ID))
 	if err != nil {
 		return nil, apperror.New(apperror.Internal, "failed to get itineraries", err)
 	}
 
-	return itineraries, nil
+	totalPages := int(math.Ceil(float64(total) / float64(req.Limit)))
+
+	return &model.GetMyItineraryResponse{Data: itineraries, Meta: model.Meta{
+		Page:       req.Page,
+		Limit:      req.Limit,
+		TotalData:  total,
+		TotalPages: totalPages,
+	}}, nil
 }
 
 func (s *Service) AddPlaceToItinerary(ctx context.Context, req model.AddPlaceRequest) error {

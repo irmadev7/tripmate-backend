@@ -45,7 +45,7 @@ func (h *Handler) CreateItinerary(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "itinerary created", itinerary)
+	response.Success(c, http.StatusCreated, "itinerary created", itinerary, nil)
 }
 
 func (h *Handler) GetMyItineraries(c *gin.Context) {
@@ -55,13 +55,33 @@ func (h *Handler) GetMyItineraries(c *gin.Context) {
 		return
 	}
 
-	itineraries, err := h.service.GetMyItineraries(c, email)
+	var req model.GetMyItineraryRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.AppError(c,
+			apperror.New(apperror.InvalidInput, "invalid query params", err), "invalid request",
+		)
+		return
+	}
+
+	// default value
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.Limit <= 0 {
+		req.Limit = 10
+	}
+	if req.Limit > 100 {
+		req.Limit = 100
+	}
+
+	req.Email = email
+	itineraries, err := h.service.GetMyItineraries(c, req)
 	if err != nil {
 		response.AppError(c, err, "failed to fetch itineraries")
 		return
 	}
 
-	response.Success(c, http.StatusOK, "processed successfully", itineraries)
+	response.Success(c, http.StatusOK, "processed successfully", itineraries.Data, itineraries.Meta)
 }
 
 func (h *Handler) AddPlaceToItinerary(c *gin.Context) {
@@ -90,5 +110,5 @@ func (h *Handler) AddPlaceToItinerary(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "place added", input)
+	response.Success(c, http.StatusCreated, "place added", input, nil)
 }

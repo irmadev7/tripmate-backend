@@ -39,3 +39,15 @@ type AddPlaceRequest struct {
 	ItineraryID int    `json:"-"`
 	Email       string `json:"-"`
 }
+
+type GetMyItineraryRequest struct {
+	Email  string
+	Page   int    `form:"page"`
+	Limit  int    `form:"limit"`
+	Search string `form:"search"`
+}
+
+type GetMyItineraryResponse struct {
+	Data *[]Itinerary
+	Meta Meta
+}

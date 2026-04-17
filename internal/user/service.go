@@ -23,10 +23,10 @@ func NewService(repo repository.UserRepository, tokenSvc *auth.TokenService) *Se
 	return &Service{repo: repo, tokenSvc: tokenSvc}
 }
 
-func (s *Service) RegisterUser(ctx context.Context, req model.UserRequest) error {
+func (s *Service) RegisterUser(ctx context.Context, req model.UserRequest) (*model.UserResponse, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return apperror.New(apperror.Internal, "failed to hash password", err)
+		return nil, apperror.New(apperror.Internal, "failed to hash password", err)
 	}
 
 	user := model.User{
@@ -36,14 +36,14 @@ func (s *Service) RegisterUser(ctx context.Context, req model.UserRequest) error
 	}
 	if err := s.repo.CreateUser(ctx, &user); err != nil {
 		if repository.IsDuplicateKeyError(err) {
-			return apperror.New(apperror.Conflict, "email already exists", err)
+			return nil, apperror.New(apperror.Conflict, "email already exists", err)
 		}
-		return apperror.New(apperror.Internal, "failed to create user", err)
+		return nil, apperror.New(apperror.Internal, "failed to create user", err)
 	}
 
 	go utils.SendEmail(user.Email, user.Name)
 
-	return nil
+	return &model.UserResponse{Email: user.Email, Name: user.Name}, nil
 }
 
 func (s *Service) Login(ctx context.Context, req model.LoginRequest) (*model.LoginResponse, error) {

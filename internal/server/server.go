@@ -13,7 +13,11 @@ import (
 	"github.com/irmadev7/tripmate-backend/internal/user"
 	itineraryV1 "github.com/irmadev7/tripmate-backend/internal/v1/itinerary"
 	userV1 "github.com/irmadev7/tripmate-backend/internal/v1/user"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
+
+	_ "github.com/irmadev7/tripmate-backend/docs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -32,6 +36,7 @@ func New() (*Server, error) {
 	}
 
 	r := gin.Default()
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	db := config.ConnectDB()
 	db.AutoMigrate(&model.User{})

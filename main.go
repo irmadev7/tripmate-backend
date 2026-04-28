@@ -6,6 +6,9 @@ import (
 	"github.com/irmadev7/tripmate-backend/internal/server"
 )
 
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	s, err := server.New()
 	if err != nil {

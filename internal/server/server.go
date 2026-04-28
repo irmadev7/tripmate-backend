@@ -8,6 +8,7 @@ import (
 	"github.com/irmadev7/tripmate-backend/internal/auth"
 	"github.com/irmadev7/tripmate-backend/internal/itinerary"
 	"github.com/irmadev7/tripmate-backend/internal/model"
+	"github.com/irmadev7/tripmate-backend/internal/pkg/cache"
 	"github.com/irmadev7/tripmate-backend/internal/pkg/config"
 	"github.com/irmadev7/tripmate-backend/internal/repository"
 	"github.com/irmadev7/tripmate-backend/internal/user"
@@ -50,10 +51,13 @@ func New() (*Server, error) {
 	userRepo := repository.NewUserRepository(db)
 	itineraryRepo := repository.NewItineraryRepository(db)
 
+	// redis
+	redisClient := cache.NewRedis()
+
 	// service
 	tokenService := auth.NewTokenService(secret)
 	userService := user.NewService(&userRepo, tokenService)
-	itineraryService := itinerary.NewService(&itineraryRepo, &userRepo, &placeRepo)
+	itineraryService := itinerary.NewService(&itineraryRepo, &userRepo, &placeRepo, redisClient)
 
 	// routes
 	userV1.RegisterRoutes(v1, userService, tokenService)

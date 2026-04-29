@@ -14,6 +14,7 @@ import (
 	"github.com/irmadev7/tripmate-backend/internal/user"
 	itineraryV1 "github.com/irmadev7/tripmate-backend/internal/v1/itinerary"
 	userV1 "github.com/irmadev7/tripmate-backend/internal/v1/user"
+	userV2 "github.com/irmadev7/tripmate-backend/internal/v2/user"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
@@ -43,8 +44,8 @@ func New() (*Server, error) {
 	db.AutoMigrate(&model.User{})
 
 	// register routes
-	api := r.Group("/api")
-	v1 := api.Group("/v1")
+	v1 := r.Group("/api/v1")
+	v2 := r.Group("/api/v2")
 
 	// repo
 	placeRepo := repository.NewPlaceRepository(db)
@@ -57,10 +58,12 @@ func New() (*Server, error) {
 	// service
 	tokenService := auth.NewTokenService(secret)
 	userService := user.NewService(&userRepo, tokenService)
+	userServiceV2 := user.NewServiceV2(&userRepo, tokenService, redisClient)
 	itineraryService := itinerary.NewService(&itineraryRepo, &userRepo, &placeRepo, redisClient)
 
 	// routes
 	userV1.RegisterRoutes(v1, userService, tokenService)
+	userV2.RegisterRoutes(v2, userServiceV2, tokenService)
 	itineraryV1.RegisterRoutes(v1, itineraryService, tokenService)
 
 	return &Server{r: r, db: db}, nil
